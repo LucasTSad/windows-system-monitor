@@ -1,34 +1,10 @@
 import psutil
 
-# CPU ---------------------------------------------------------------------------------
-# CPU percent
-cpu_percent = psutil.cpu_percent(interval=1, percpu=False)
-print("CPU Percent: ",cpu_percent)
+from monitor.cpu.cpu_monitor import get_cpu_info
 
-# Deixar True para retornar todos os núcleos, False para retornar apenas a média
-cpu_times_per = psutil.cpu_times_percent(interval=1, percpu=False)
-print("CPU Times Percent: ",cpu_times_per)
+cpu_info = get_cpu_info()
 
-# Caso False retorna apenas o número de núcleos físicos
-# Caso True retorna o número de núcleos lógicos
-num_cpu = psutil.cpu_count(logical=False)
-print("Núcleos: ",num_cpu)
-
-# Numero de CPU's que podem ser utilizados pelo sistema operacional
-true_cpu = len(psutil.Process().cpu_affinity())
-print("Núcleos Utilizáveis: ",true_cpu)
-
-# Status do CPU
-cpu_status = psutil.cpu_stats()
-print("CPU Status: ",cpu_status)
-
-# Frequencia do CPU em Mhz (fixo em Windows)
-cpu_freq = psutil.cpu_freq()
-print("CPU Frequency: ",cpu_freq)
-
-# Média de system load
-cpu_load = psutil.getloadavg()
-print("CPU Load: ",cpu_load)
+print(cpu_info)
 
 # MEMORIA ---------------------------------------------------------------------------------
 # Retorna a quantidade de memória virtual disponível, usada, livre, etc.
