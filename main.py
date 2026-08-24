@@ -1,15 +1,10 @@
-import psutil
-
 from monitor.cpu.cpu_monitor import get_cpu_info
+from monitor.memory.memory_monitor import get_memory_info
 
 cpu_info = get_cpu_info()
+mem_info = get_memory_info()
 
-print(cpu_info)
-
-# MEMORIA ---------------------------------------------------------------------------------
-# Retorna a quantidade de memória virtual disponível, usada, livre, etc.
-memoria = psutil.virtual_memory()
-print("Memoria: ",memoria)
+print(f"CPU: {cpu_info}\nMEMORIA: {mem_info}\n")
 
 # DISK ---------------------------------------------------------------------------------
 # Caso Falso tenta distinguir entre discos físicos e lógicos e tenta retornar apenas os Fisicos
