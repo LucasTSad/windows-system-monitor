@@ -106,16 +106,19 @@ Monitor de Sistema
     │
     ├── memory
     │   └── memory_monitor.py
+    │
     ├── disk
     │   └── disk_monitor.py
     │
     ├── net
     │   └── network_monitor.py
+    │
     ├── gpu
     │   └── gpu_monitor.py
     │
     ├── process
     │   └── process_monitor.py
+    │
     └── hardware
         └── hardware_monitor.py
 ```
