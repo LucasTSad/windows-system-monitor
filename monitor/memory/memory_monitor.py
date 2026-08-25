@@ -1,5 +1,5 @@
 import psutil
-from bytes_2_gb import bytes_converter
+from monitor.bytes_2_gb import bytes_converter
 
 def get_memory_info():
     # Retorna a quantidade de memória virtual disponível, usada, livre, etc.

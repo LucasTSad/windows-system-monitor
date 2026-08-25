@@ -25,7 +25,7 @@ O projeto tem como objetivo principal servir como projeto de aprendizagem para p
 - [x] Estrutura inicial do projeto
 - [x] Monitoramento de CPU
 - [x] Monitoramento de memória RAM
-- [ ] Monitoramento de disco
+- [x] Monitoramento de disco
 - [ ] Monitoramento de rede
 - [ ] Monitoramento de GPU
 - [ ] Monitoramento de processos
@@ -168,10 +168,10 @@ A intenção é evitar que a lógica de coleta fique diretamente misturada com a
 ### Disco
 
 - [ ] Partições/volumes
-- [ ] Espaço total
-- [ ] Espaço utilizado
-- [ ] Espaço livre
-- [ ] Percentual utilizado
+- [x] Espaço total
+- [x] Espaço utilizado
+- [x] Espaço livre
+- [x] Percentual utilizado
 - [ ] Leitura
 - [ ] Escrita
 - [ ] Velocidade de leitura/escrita
