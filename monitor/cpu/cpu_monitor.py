@@ -1,49 +1,56 @@
 import psutil
 
-def get_cpu_info():
-    #retorna o % de uso da CPU por núcleo
-    cpu_usage_per_core = psutil.cpu_percent(interval=1, percpu=True)
-    #retorna o % total de uso da CPU
-    cpu_usage_total = round(sum(cpu_usage_per_core) / len(cpu_usage_per_core), 1) if cpu_usage_per_core else 0.0
-    #retorna o número de núcleos lógicos
-    cpu_logical_core = psutil.cpu_count(logical=True)
-    #retorna o número de núcleos físicos
-    cpu_physical_core = psutil.cpu_count(logical=False)
-    # #retorna o status do CPU
-    # cpu_status = psutil.cpu_stats()
+class MonitorCPU:
 
-    # Frequencia do CPU em Mhz (fixo em Windows)
-    try:
-        cpu_freq = psutil.cpu_freq()
-        if cpu_freq and cpu_freq.current > 0.0:
-            cpu_freq_current = cpu_freq.current
-            cpu_freq_min = cpu_freq.min
-            cpu_freq_max = cpu_freq.max
-        else:
-            raise ValueError
-    except (AttributeError, ValueError, TypeError):
-        cpu_freq_current = None
-        cpu_freq_min = None
-        cpu_freq_max = None
-    return {
-        "uso_total_percentual" : cpu_usage_total,
-        "uso_por_nucleo_percentual" : cpu_usage_per_core,
-        "nucleos_logicos" : cpu_logical_core,
-        "nucleos_fisicos" : cpu_physical_core,
-        # "status_cpu" : {
-        #     "ctx_switches" : cpu_status.ctx_switches,
-        #     "interrupts" : cpu_status.interrupts,
-        #     "soft_interrupts" : cpu_status.soft_interrupts,
-        #     "syscalls" : cpu_status.syscalls
-        # },
-        "frequencia_cpu_mhz" : {
-            "current" : cpu_freq_current,
-            "min" : cpu_freq_min,
-            "max" : cpu_freq_max,
+    def __init__(self):
+        #retorna o número de núcleos lógicos
+        self.cpu_logical_core = psutil.cpu_count(logical=True)
+        #retorna o número de núcleos físicos
+        self.cpu_physical_core = psutil.cpu_count(logical=False)
+
+        psutil.cpu_percent(interval=None, percpu=True)
+
+        try:
+            freq = psutil.cpu_freq()
+            self.freq_min = freq.min if freq else None
+            self.freq_max = freq.max if freq else None
+        except (AttributeError, ValueError, TypeError):
+            self.freq_min = None
+            self.freq_max = None
+
+    def get_cpu_info(self):
+        #retorna o % de uso da CPU por núcleo
+        cpu_usage_per_core = psutil.cpu_percent(interval=None, percpu=True)
+        #retorna o % total de uso da CPU
+        cpu_usage_total = round(sum(cpu_usage_per_core) / len(cpu_usage_per_core), 1) if cpu_usage_per_core else 0.0
+
+        # #retorna o status do CPU
+        # cpu_status = psutil.cpu_stats()
+
+        # Frequencia do CPU em Mhz (fixo em Windows)
+        try:
+            freq = psutil.cpu_freq()
+            cpu_freq_current = freq.current if (freq and freq.current > 0.0) else None
+        except (AttributeError, ValueError, TypeError):
+            cpu_freq_current = None
+
+        return {
+            "uso_total_percentual" : cpu_usage_total,
+            "uso_por_nucleo_percentual" : cpu_usage_per_core,
+            "nucleos_logicos" : self.cpu_logical_core,
+            "nucleos_fisicos" : self.cpu_physical_core,
+            # "status_cpu" : {
+            #     "ctx_switches" : cpu_status.ctx_switches,
+            #     "interrupts" : cpu_status.interrupts,
+            #     "soft_interrupts" : cpu_status.soft_interrupts,
+            #     "syscalls" : cpu_status.syscalls
+            # },
+            "frequencia_cpu_mhz" : {
+                "atual" : cpu_freq_current,
+                "min" : self.freq_min,
+                "max" : self.freq_max,
+            }
         }
-    }
-
-
 
 # # CPU ---------------------------------------------------------------------------------
 # # CPU percent

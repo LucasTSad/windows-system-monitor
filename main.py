@@ -1,44 +1,76 @@
 import psutil
+import json
+import subprocess
+import time
 
-from monitor.cpu.cpu_monitor import get_cpu_info
-from monitor.memory.memory_monitor import get_memory_info
-from monitor.disk.disk_monitor import get_disk_info
+from monitor.cpu.cpu_monitor import MonitorCPU
+from monitor.memory.memory_monitor import MonitorMemoria
+from monitor.disk.disk_monitor import MonitorDisco
+from monitor.network.network_monitor import MonitorRede
 
-cpu_info = get_cpu_info()
-mem_info = get_memory_info()
-disk_info = get_disk_info()
+def start_monitor():
+    monitor_rede = MonitorRede()
+    monitor_cpu = MonitorCPU()
+    monitor_mem = MonitorMemoria()
+    monitor_disk = MonitorDisco()
 
-print(f"CPU: {cpu_info}\nMEMORIA: {mem_info}\nDISCO: {disk_info}\n")
+    comando_limpar = ["cls"] if subprocess.os.name == 'nt' else ["clear"]
+    intervalo_seg = 1
 
-# NETWORK ---------------------------------------------------------------------------------
-# Retorna as statisticas de I/O da rede
-# Caso pernic for True retorna todas as redes instaladas
-# Caso False retorna apenas a ativa
-rede = psutil.net_io_counters(pernic=False, nowrap=True)
-print("Rede: ",rede)
+    try:
+        while True:
+            # Coleta os dados brutos das suas classes
+            dados_cpu = monitor_cpu.get_cpu_info()         
+            dados_mem = monitor_mem.get_memory_info()       
+            dados_disk = monitor_disk.get_disk_info()       
+            dados_rede = monitor_rede.medir_vel_atual(intervalo=intervalo_seg)
 
-# Retorna os tipos de IP usado
-# inet - IPv4 e IPv6
-# inet4 - IPv4
-# inet6 - IPv6
-# tcp - TCP
-# tcp4 - prioriza TCP ao invez de IPv4
-# tcp6 - prioriza TCP ao invez de IPv6
-# udp - UDP
-# udp4 - prioriza UDP ao invez de IPv4
-# udp6 - prioriza UDP ao invez de IPv6
-# unix - Unix sockets
-# all - todos os tipos de IP
-# rede_ip = psutil.net_connections(kind='inet4')
-# print("Rede IP: ",rede_ip)
+            # Trata as frequências para o JSON não quebrar se vier None
+            freq_atual = dados_cpu['frequencia_cpu_mhz']['atual']
+            freq_formatada = f"{int(freq_atual)} MHz" if freq_atual else "N/A"
 
-# Retorna o endereço associado a cada NIC
-# rede_endereco = psutil.net_if_addrs()
-# print("Rede Endereço: ",rede_endereco)
+            # Monta o JSON final exatamente com o layout e chaves que você pediu
+            snapshot_enxuto = {
+                "TIMESTAMP": time.strftime("%d/%m/%Y %H:%M:%S"),
+                "CPU": {
+                    "Uso": f"{dados_cpu['uso_total_percentual']}%",
+                    "Frequência": freq_formatada,
+                    "Frequência Mínima": f"{int(dados_cpu['frequencia_cpu_mhz']['min'])} MHz",
+                    "Frequência Máxima": f"{int(dados_cpu['frequencia_cpu_mhz']['max'])} MHz"
+                },
+                "MEMÓRIA": {
+                    "Uso_RAM": f"{dados_mem['memoria']['percentual_ram_uso']}%",
+                    "Consumo_RAM": f"{dados_mem['memoria']['usada_ram']} / {dados_mem['memoria']['total_ram']}",
+                    "Uso_Swap": f"{dados_mem['swap'].get('percentual_swap_uso', 0)}%",
+                    "Consumo_Swap": f"{dados_mem['swap']['usada_swap']} / {dados_mem['swap']['total_swap']}"
+                },
+                "DISCO": {
+                    # Varre dinamicamente todos os discos usáveis mapeados
+                    dispositivo: f"Uso: {dados['percentual']}%"
+                    for dispositivo, dados in dados_disk['uso_disco'].items()
+                },
+                "REDE": {
+                    # Varre dinamicamente as placas de rede ativas com tráfego
+                    nome_placa: {
+                        "Download": velocidades['download_vel'],
+                        "Upload": velocidades['upload_vel']
+                    }
+                    for nome_placa, velocidades in dados_rede.items()
+                } if dados_rede else "Nenhuma interface ativa com tráfego."
+            }
 
-# Retorna as estatisticas de cada NIC
-rede_estatisticas = psutil.net_if_stats()
-print("Rede Estatisticas: ",rede_estatisticas)
+            # Limpa o terminal antes de exibir o novo segundo
+            subprocess.run(comando_limpar, shell=True)
+
+            print(json.dumps(snapshot_enxuto, indent=4, ensure_ascii=False))
+
+            time.sleep(intervalo_seg)
+
+    except KeyboardInterrupt:
+        print("\n[!] Monitoramento encerrado pelo usuário.")
+
+if __name__ == "__main__":
+    start_monitor()
 
 # SENSORES ---------------------------------------------------------------------------------
 # Retorna o status da bateria do sensor
