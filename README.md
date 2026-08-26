@@ -181,13 +181,13 @@ A intenção é evitar que a lógica de coleta fique diretamente misturada com a
 
 ### Rede
 
-- [ ] Bytes recebidos
-- [ ] Bytes enviados
-- [ ] Velocidade de download
-- [ ] Velocidade de upload
-- [ ] Interfaces de rede
-- [ ] Status das interfaces
-- [ ] Endereços IP
+- [x] Bytes recebidos
+- [x] Bytes enviados
+- [x] Velocidade de download
+- [x] Velocidade de upload
+- [x] Interfaces de rede
+- [x] Status das interfaces
+- [x] Endereços IP
 
 ### GPU
 

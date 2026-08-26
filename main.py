@@ -19,17 +19,31 @@ def start_monitor():
 
     try:
         while True:
-            # Coleta os dados brutos das suas classes
             dados_cpu = monitor_cpu.get_cpu_info()         
             dados_mem = monitor_mem.get_memory_info()       
             dados_disk = monitor_disk.get_disk_info()       
             dados_rede = monitor_rede.medir_vel_atual(intervalo=intervalo_seg)
 
-            # Trata as frequências para o JSON não quebrar se vier None
             freq_atual = dados_cpu['frequencia_cpu_mhz']['atual']
             freq_formatada = f"{int(freq_atual)} MHz" if freq_atual else "N/A"
 
-            # Monta o JSON final exatamente com o layout e chaves que você pediu
+            # Formata dinamicamente a seção de REDE
+            rede_formatted = {}
+            for nome_placa, info in dados_rede.items():
+                if info["status"] == "Desconectado":
+                    rede_formatted[nome_placa] = {
+                        "Status": "Desconectado"
+                    }
+                else:
+                    rede_formatted[nome_placa] = {
+                        "Status": "Conectado",
+                        "Velocidade Download": info["velocidade_download"],
+                        "Velocidade Upload": info["velocidade_upload"],
+                        "Bytes Recebidos": info["bytes_recebidos_total"],
+                        "Bytes Enviados": info["bytes_enviados_total"],
+                        "Endereços IP/MAC": info["enderecos"]
+                    }
+
             snapshot_enxuto = {
                 "TIMESTAMP": time.strftime("%d/%m/%Y %H:%M:%S"),
                 "CPU": {
@@ -45,25 +59,14 @@ def start_monitor():
                     "Consumo_Swap": f"{dados_mem['swap']['usada_swap']} / {dados_mem['swap']['total_swap']}"
                 },
                 "DISCO": {
-                    # Varre dinamicamente todos os discos usáveis mapeados
                     dispositivo: f"Uso: {dados['percentual']}%"
                     for dispositivo, dados in dados_disk['uso_disco'].items()
                 },
-                "REDE": {
-                    # Varre dinamicamente as placas de rede ativas com tráfego
-                    nome_placa: {
-                        "Download": velocidades['download_vel'],
-                        "Upload": velocidades['upload_vel']
-                    }
-                    for nome_placa, velocidades in dados_rede.items()
-                } if dados_rede else "Nenhuma interface ativa com tráfego."
+                "REDE": rede_formatted if rede_formatted else "Nenhuma interface detectada."
             }
 
-            # Limpa o terminal antes de exibir o novo segundo
             subprocess.run(comando_limpar, shell=True)
-
             print(json.dumps(snapshot_enxuto, indent=4, ensure_ascii=False))
-
             time.sleep(intervalo_seg)
 
     except KeyboardInterrupt:
