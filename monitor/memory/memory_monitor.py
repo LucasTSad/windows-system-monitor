@@ -8,7 +8,7 @@ class MonitorMemoria:
         swap_start = psutil.swap_memory()
 
         self.total_ram = bytes_converter(mem_start.total)
-        self.total_swap = bytes_converter(swap_start.used)
+        self.total_swap = bytes_converter(swap_start.total)
 
     def get_memory_info(self):
     # Retorna a quantidade de memória virtual disponível, usada, livre, etc.

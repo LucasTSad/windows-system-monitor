@@ -5,23 +5,63 @@ from monitor.bytes_2_gb import bytes_converter
 class MonitorDisco:
 
     def __init__(self):
+        self.usable_disks = []
+        self.all_disk_sum = {}
+        self.usable_disks_sum = {}
+        self.total_gb_cache = {}
+
+    def _get_current_disk(self):
         # Retorna todos os discos
         all_disks = psutil.disk_partitions(all=True)
-        # Lista de todos os discos
-        self.all_disk_sum = self._disk_info_builder(all_disks)
         # Retorna os disicos ustilizaveis
-        self.usable_disks = [disk for disk in all_disks if 'cdrom' not in disk.opts and disk.fstype != '']
-        # Lista de todos os discos fisicos validas/ativas
-        self.usable_disks_sum = self._disk_info_builder(self.usable_disks)
+        usable_disks = [disk for disk in all_disks if 'cdrom' not in disk.opts and disk.fstype != '']
+        return all_disks, usable_disks
 
-        self.total_gb_cache = {}
+
+    def _get_disk_usage(self):
+
+        sum_uso = {}
+
+        current_disks = {disk.device for disk in self.usable_disks}
+        cache_disks = set(self.total_gb_cache.keys())
+        removed_disks = cache_disks - current_disks
+
+        # Remove os discos que não estão mais presentes
+        for disk in removed_disks:
+            del self.total_gb_cache[disk]
+
         for disk in self.usable_disks:
             try:
-                # No Windows/Linux, usar o mountpoint para buscar o uso é o padrão mais seguro
+                # disk.device contém a letra no Windows (ex: 'C:\\') ou o caminho no Linux (ex: '/')
                 usage = psutil.disk_usage(disk.mountpoint)
-                self.total_gb_cache[disk.device] = bytes_converter(usage.total)
-            except OSError:
-                self.total_gb_cache[disk.device] = None
+
+                if disk.device not in self.total_gb_cache or self.total_gb_cache[disk.device] is None:
+                        
+                    self.total_gb_cache[disk.device] = bytes_converter(usage.total)
+    
+                sum_uso[disk.device] = {
+                            "total_gb": self.total_gb_cache.get(disk.device),
+                            "used_gb": bytes_converter(usage.used),
+                            "free_gb": bytes_converter(usage.free),
+                            "percentual": usage.percent,
+                            "status": "Online"
+                        }
+    
+            except OSError as e:
+                    # Define o status dinamicamente checando a classe da exceção 'e'
+                    status_erro = "Erro de Permissao" if isinstance(e, PermissionError) else "Unidade Indisponivel"
+                    self.total_gb_cache[disk.device] = None
+                    # Evita que o script quebre caso algum disco precise de permissão de administrador
+                    sum_uso[disk.device] = {
+                        "total_gb": self.total_gb_cache.get(disk.device),
+                        "used_gb": None,
+                        "free_gb": None,
+                        "percentual": None,
+                        "status": status_erro
+                    }
+
+        return sum_uso
+
 
     def _disk_info_builder(self,disks):
         disk_lib = {}
@@ -35,39 +75,19 @@ class MonitorDisco:
         return disk_lib
 
     def get_disk_info(self):
+
+        all_disks, usable_disks = self._get_current_disk()
+        self.usable_disks = usable_disks
+
+        self.all_disk_sum = self._disk_info_builder(all_disks)
+        self.usable_disks_sum = self._disk_info_builder(usable_disks)
        
-        sum_uso = {}
-
-        for disk in self.usable_disks:
-            try:
-                # disk.device contém a letra no Windows (ex: 'C:\\') ou o caminho no Linux (ex: '/')
-                usage = psutil.disk_usage(disk.device)
-
-                sum_uso[disk.device] = {
-                    "total_gb": self.total_gb_cache.get(disk.device),
-                    "used_gb": bytes_converter(usage.used),
-                    "free_gb": bytes_converter(usage.free),
-                    "percentual": usage.percent,
-                    "status": "Online"
-                }
-            except OSError as e:
-                # Define o status dinamicamente checando a classe da exceção 'e'
-                status_erro = "Erro de Permissao" if isinstance(e, PermissionError) else "Unidade Indisponivel"
-                # Evita que o script quebre caso algum disco precise de permissão de administrador
-                sum_uso[disk.device] = {
-                    "total_gb": self.total_gb_cache.get(disk.device),
-                    "used_gb": None,
-                    "free_gb": None,
-                    "percentual": None,
-                    "status": status_erro
-                }
-
         return {
             "discos" : {
                 "todos_discos" : self.all_disk_sum,
                 "discos_usáveis" : self.usable_disks_sum,
             },
-            "uso_disco" : sum_uso
+            "uso_disco" : self._get_disk_usage()
         }
 
 # # DISK ---------------------------------------------------------------------------------
