@@ -9,6 +9,7 @@ from monitor.disk.disk_monitor import MonitorDisco
 from monitor.network.network_monitor import MonitorRede
 
 def start_monitor():
+    
     monitor_rede = MonitorRede()
     monitor_cpu = MonitorCPU()
     monitor_mem = MonitorMemoria()

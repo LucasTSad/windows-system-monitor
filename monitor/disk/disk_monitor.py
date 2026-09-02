@@ -10,6 +10,7 @@ class MonitorDisco:
         self.usable_disks_sum = {}
         self.total_gb_cache = {}
 
+    ## Retorna todos os discos e os utilizaveis
     def _get_current_disk(self):
         # Retorna todos os discos
         all_disks = psutil.disk_partitions(all=True)
@@ -18,9 +19,42 @@ class MonitorDisco:
         return all_disks, usable_disks
 
 
-    def _get_disk_usage(self):
-
+    ## Retorna um unico disco e trata erros caso Não tenha permissão de acesso;
+    ## não está conectado ou simplesmente indisponivel
+    def _get_single_disk_usage(self, disk):
         sum_uso = {}
+        try:
+            usage = psutil.disk_usage(disk.mountpoint)
+
+            if disk.device not in self.total_gb_cache or self.total_gb_cache[disk.device] is None:
+
+                self.total_gb_cache[disk.device] = bytes_converter(usage.total)
+
+            sum_uso[disk.device] = {
+                    "total_gb": self.total_gb_cache.get(disk.device),
+                    "used_gb": bytes_converter(usage.used),
+                    "free_gb": bytes_converter(usage.free),
+                    "percentual": usage.percent,
+                    "status": "Online"
+                    }
+        except OSError as e:
+            # Define o status dinamicamente checando a classe da exceção 'e'
+            status_erro = "Erro de Permissao" if isinstance(e, PermissionError) else "Unidade Indisponivel"
+            self.total_gb_cache[disk.device] = None
+            # Evita que o script quebre caso algum disco precise de permissão de administrador
+            sum_uso[disk.device] = {
+                "total_gb": self.total_gb_cache.get(disk.device),
+                "used_gb": None,
+                "free_gb": None,
+                "percentual": None,
+                "status": status_erro
+            }
+        
+        return sum_uso
+
+
+    ## Cuida do conjunto de discos e sincorniza o cache
+    def _get_disk_usage(self):
 
         current_disks = {disk.device for disk in self.usable_disks}
         cache_disks = set(self.total_gb_cache.keys())
@@ -30,39 +64,16 @@ class MonitorDisco:
         for disk in removed_disks:
             del self.total_gb_cache[disk]
 
+        disks = {}
         for disk in self.usable_disks:
-            try:
-                # disk.device contém a letra no Windows (ex: 'C:\\') ou o caminho no Linux (ex: '/')
-                usage = psutil.disk_usage(disk.mountpoint)
+            disk_usage = self._get_single_disk_usage(disk)
+            disks.update(disk_usage)
 
-                if disk.device not in self.total_gb_cache or self.total_gb_cache[disk.device] is None:
-                        
-                    self.total_gb_cache[disk.device] = bytes_converter(usage.total)
-    
-                sum_uso[disk.device] = {
-                            "total_gb": self.total_gb_cache.get(disk.device),
-                            "used_gb": bytes_converter(usage.used),
-                            "free_gb": bytes_converter(usage.free),
-                            "percentual": usage.percent,
-                            "status": "Online"
-                        }
-    
-            except OSError as e:
-                    # Define o status dinamicamente checando a classe da exceção 'e'
-                    status_erro = "Erro de Permissao" if isinstance(e, PermissionError) else "Unidade Indisponivel"
-                    self.total_gb_cache[disk.device] = None
-                    # Evita que o script quebre caso algum disco precise de permissão de administrador
-                    sum_uso[disk.device] = {
-                        "total_gb": self.total_gb_cache.get(disk.device),
-                        "used_gb": None,
-                        "free_gb": None,
-                        "percentual": None,
-                        "status": status_erro
-                    }
-
-        return sum_uso
+            
+        return disks
 
 
+    ## Retorna as informações do disco
     def _disk_info_builder(self,disks):
         disk_lib = {}
         for disk in disks:
@@ -74,6 +85,8 @@ class MonitorDisco:
 
         return disk_lib
 
+
+    ## Retorna as informações do disco
     def get_disk_info(self):
 
         all_disks, usable_disks = self._get_current_disk()
